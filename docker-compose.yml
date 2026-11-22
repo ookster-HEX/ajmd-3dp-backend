@@ -8,7 +8,7 @@ services:
     container_name: ajmd-3dp-backend
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8888:8888"
     environment:
       # Store SQLite inside /app/data so the database file persists across container rebuilds
       DATABASE_URL: "sqlite+aiosqlite:////app/data/3dp.db"
@@ -23,7 +23,7 @@ services:
       - ajmd_3dp_storage:/app/storage
       - ajmd_3dp_profiles:/app/profiles
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/openapi.json"]
+      test: ["CMD", "curl", "-f", "http://localhost:8888/openapi.json"]
       interval: 30s
       timeout: 10s
       retries: 3
