@@ -29,8 +29,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libbz2-1.0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Download and extract OrcaSlicer v2.5.2 directly (no ARG variables to get mangled)
-RUN curl -fSL "https://github.com" -o /tmp/orcaslicer.AppImage \
+# Assemble the URL at build time so copy/paste tools cannot strip the path
+RUN URL=$(printf '%s/%s/%s' \
+      'https://github.com' \
+      'OrcaSlicer/OrcaSlicer/releases/download/v2.5.2' \
+      'OrcaSlicer_Linux_AppImage_Ubuntu2404_V2.5.2.AppImage') \
+    && curl -fSL "$URL" -o /tmp/orcaslicer.AppImage \
     && chmod +x /tmp/orcaslicer.AppImage \
     && cd /tmp && ./orcaslicer.AppImage --appimage-extract \
     && mv /tmp/squashfs-root /opt/orcaslicer \
