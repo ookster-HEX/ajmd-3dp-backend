@@ -33,8 +33,8 @@ ENV PATH="/app/.venv/bin:$PATH" \
     UV_LINK_MODE=copy
 
 # Install Python dependencies first for optimal layer caching
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev --no-install-project
+COPY pyproject.toml ./
+RUN uv sync --no-dev --no-install-project
 
 # Create non-root user and persistent directories
 RUN useradd --create-home --shell /bin/bash appuser \
