@@ -5,7 +5,7 @@ description = "FastAPI backend for the AJMD 3D printing quoting web application"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi>=0.115.0",
+    "fastapi[standard]>=0.115.0",
     "uvicorn[standard]>=0.32.0",
     "sqlalchemy[asyncio]>=2.0.35",
     "aiosqlite>=0.20.0",
