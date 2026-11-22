@@ -15,5 +15,5 @@ services:
       ORCA_SLICER_BIN: "/usr/local/bin/orca-slicer"
       ORCA_PROFILES_DIR: "/data/profiles"
     volumes:
-      - /mnt/nas1/ajmd/db:/data/db
-      - /mnt/nas1/ajmd/profiles:/data/profiles
+      - /mnt/nas1/nginx/ajmd/backend/db:/data/db
+      - /mnt/nas1/nginx/ajmd/backend/profiles:/data/profiles
