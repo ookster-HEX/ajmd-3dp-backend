@@ -1,5 +1,8 @@
 FROM python:3.11-slim-bookworm
 
+# Install uv from the official Astral image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 # Install system dependencies required by headless OrcaSlicer
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
@@ -36,17 +39,30 @@ RUN wget -q "https://github.com{ORCA_VERSION}/${ORCA_FILENAME}" -O /tmp/orcaslic
 
 WORKDIR /app
 
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Enable bytecode compilation and copy mode for uv
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
 
-# Copy application code
+# Copy dependency definitions first for Docker layer caching
+# (uv.lock* uses a wildcard so the build still succeeds if you haven't committed a lockfile yet)
+COPY pyproject.toml uv.lock* ./
+
+# Install dependencies without installing the project itself yet
+RUN uv sync --no-install-project --no-dev
+
+# Copy the rest of your application code
 COPY . .
+
+# Sync the project into the virtual environment
+RUN uv sync --no-dev
+
+# Put the virtual environment on PATH so uvicorn and python work directly
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Create mount points
 RUN mkdir -p /data/db /data/profiles
 
 EXPOSE 8888
 
-# Run FastAPI via uvicorn on port 8888 (adjust "main:app" if needed)
+# Run FastAPI via uvicorn on port 8888 (adjust "main:app" if your entry module differs)
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8888"]
