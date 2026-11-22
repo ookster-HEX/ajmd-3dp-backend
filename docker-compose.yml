@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   ajmd-3dp-backend:
     build:
@@ -7,23 +5,21 @@ services:
       dockerfile: Dockerfile
     container_name: ajmd-3dp-backend
     restart: unless-stopped
+    shm_size: "512m"
     ports:
       - "8888:8888"
     environment:
-      # Store SQLite inside /app/data so the database file persists across container rebuilds
       DATABASE_URL: "sqlite+aiosqlite:////app/data/3dp.db"
-      # Replace with a strong random secret in Portainer's Environment Variables UI
-      SECRET_KEY: "${SECRET_KEY:-change-me-in-production-ajmd-3dp-secret-key}"
+      SECRET_KEY: "${SECRET_KEY:?SECRET_KEY must be set}"
       TOKEN_TTL_SECONDS: "${TOKEN_TTL_SECONDS:-604800}"
       ORCA_SLICER_BIN: "/usr/local/bin/orca-slicer"
       ORCA_PROFILES_DIR: "/app/profiles"
     volumes:
-      # Named volumes managed cleanly by Portainer / Docker
       - ajmd_3dp_data:/app/data
       - ajmd_3dp_storage:/app/storage
       - ajmd_3dp_profiles:/app/profiles
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8888/openapi.json"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:8888/openapi.json"]
       interval: 30s
       timeout: 10s
       retries: 3
