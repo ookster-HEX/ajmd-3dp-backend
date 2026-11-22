@@ -17,12 +17,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=ghcr.io/astral-sh/uv:0.13.9 /uv /uvx /bin/
 
 # Install and extract OrcaSlicer Linux AppImage
-RUN curl -fsSL "https://github.com" -o /opt/orca-slicer.AppImage \
+ARG GH_REPO="SoftFever/OrcaSlicer"
+ARG ORCA_TAG="v2.2.0"
+ARG ORCA_FILE="OrcaSlicer_Linux_V2.2.0.AppImage"
+
+RUN curl -fsSL "https://github.com{GH_REPO}/releases/download/${ORCA_TAG}/${ORCA_FILE}" -o /opt/orca-slicer.AppImage \
     && chmod +x /opt/orca-slicer.AppImage \
     && cd /opt && /opt/orca-slicer.AppImage --appimage-extract \
     && rm /opt/orca-slicer.AppImage \
     && printf '#!/bin/sh\nexec xvfb-run -a /opt/squashfs-root/AppRun "$@"\n' > /usr/local/bin/orca-slicer \
     && chmod +x /usr/local/bin/orca-slicer
+
 
 
 WORKDIR /app
