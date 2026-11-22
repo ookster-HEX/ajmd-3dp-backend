@@ -1,59 +1,52 @@
-# syntax=docker/dockerfile:1
 FROM python:3.11-slim-bookworm
 
-# Install system dependencies required by OrcaSlicer (EGL/GL/GTK/xvfb) and curl
+# Install system dependencies required by headless OrcaSlicer
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
+    wget \
     ca-certificates \
-    libegl1 \
+    xvfb \
     libgl1 \
+    libegl1 \
     libglu1-mesa \
     libgtk-3-0 \
     libwebkit2gtk-4.0-37 \
-    xvfb \
+    libgstreamer1.0-0 \
+    libgstreamer-plugins-base1.0-0 \
+    libosmesa6 \
+    libxkbcommon0 \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libgbm1 \
+    libasound2 \
     && rm -rf /var/lib/apt/lists/*
 
-# Pin uv version for reproducible builds
-COPY --from=ghcr.io/astral-sh/uv:0.13.9 /uv /uvx /bin/
+# Download and extract OrcaSlicer AppImage
+ARG ORCA_VERSION=v2.2.0
+ARG ORCA_FILENAME=OrcaSlicer_Linux_V2.2.0.AppImage
 
-# Install and extract OrcaSlicer Linux AppImage
-ARG ORCA_VERSION=2.2.0
-RUN BASE="https://github.com" \
-    && REPO="SoftFever/OrcaSlicer" \
-    && FILE="OrcaSlicer_Linux_V${ORCA_VERSION}.AppImage" \
-    && URL="${BASE}/${REPO}/releases/download/v${ORCA_VERSION}/${FILE}" \
-    && curl -fsSL "$URL" -o /opt/orca-slicer.AppImage \
-    && chmod +x /opt/orca-slicer.AppImage \
-    && cd /opt && /opt/orca-slicer.AppImage --appimage-extract \
-    && rm /opt/orca-slicer.AppImage \
-    && printf '#!/bin/sh\nexec xvfb-run -a /opt/squashfs-root/AppRun "$@"\n' > /usr/local/bin/orca-slicer \
-    && chmod +x /usr/local/bin/orca-slicer
-
-
-
+RUN wget -q "https://github.com{ORCA_VERSION}/${ORCA_FILENAME}" -O /tmp/orcaslicer.AppImage \
+    && chmod +x /tmp/orcaslicer.AppImage \
+    && cd /tmp && ./orcaslicer.AppImage --appimage-extract \
+    && mv /tmp/squashfs-root /opt/orcaslicer \
+    && printf '#!/bin/sh\nexec xvfb-run -a /opt/orcaslicer/AppRun "$@"\n' > /usr/local/bin/orca-slicer \
+    && chmod +x /usr/local/bin/orca-slicer \
+    && rm /tmp/orcaslicer.AppImage
 
 WORKDIR /app
 
-# Put the uv virtual environment directly on PATH
-ENV PATH="/app/.venv/bin:$PATH" \
-    UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Python dependencies first for optimal layer caching
-COPY pyproject.toml ./
-RUN uv sync --no-dev --no-install-project
+# Copy application code
+COPY . .
 
-# Create non-root user and persistent directories
-RUN useradd --create-home --shell /bin/bash appuser \
-    && mkdir -p /app/data /app/storage/useruploads /app/storage/samples /app/profiles
-
-# Copy application source with proper ownership
-COPY --chown=appuser:appuser main.py make_admin.py ./
-RUN chown -R appuser:appuser /app
-
-USER appuser
+# Create mount points
+RUN mkdir -p /data/db /data/profiles
 
 EXPOSE 8888
 
-# Run uvicorn directly from the virtual environment
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8888", "--proxy-headers"]
+# Run FastAPI via uvicorn on port 8888 (adjust "main:app" if needed)
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8888"]
