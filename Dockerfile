@@ -26,13 +26,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgbm1 \
     libasound2t64 \
     libmspack0t64 \
+    libbz2-1.0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Download and extract OrcaSlicer AppImage (uses curl -fSL to fail loudly on bad URLs)
-ARG ORCA_VERSION=v2.5.2
-ARG ORCA_FILENAME=OrcaSlicer_Linux_AppImage_Ubuntu2404_V2.5.2.AppImage
-
-RUN curl -fSL "https://github.com${ORCA_VERSION}/${ORCA_FILENAME}" -o /tmp/orcaslicer.AppImage \
+# Download and extract OrcaSlicer v2.5.2 directly (no ARG variables to get mangled)
+RUN curl -fSL "https://github.com" -o /tmp/orcaslicer.AppImage \
     && chmod +x /tmp/orcaslicer.AppImage \
     && cd /tmp && ./orcaslicer.AppImage --appimage-extract \
     && mv /tmp/squashfs-root /opt/orcaslicer \
@@ -42,7 +40,7 @@ RUN curl -fSL "https://github.com${ORCA_VERSION}/${ORCA_FILENAME}" -o /tmp/orcas
 
 WORKDIR /app
 
-# Enable bytecode compilation, copy mode, and let uv automatically install Python 3.11
+# Enable bytecode compilation, copy mode, and let uv install Python 3.11
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PYTHON=3.11
