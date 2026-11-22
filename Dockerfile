@@ -38,7 +38,7 @@ COPY main.py make_admin.py ./
 # Create persistent directories for SQLite DB, user uploads, samples, and slicer profiles
 RUN mkdir -p /app/data /app/storage/useruploads /app/storage/samples /app/profiles
 
-EXPOSE 8000
+EXPOSE 8888
 
 # Run FastAPI via uvicorn inside the uv virtual environment
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8888", "--proxy-headers"]
