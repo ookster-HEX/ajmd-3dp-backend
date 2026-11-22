@@ -1,31 +1,19 @@
 services:
-  ajmd-3dp-backend:
+  fastapi-slicer:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ajmd-3dp-backend
+    image: fastapi-orcaslicer:latest
+    container_name: fastapi-orcaslicer
     restart: unless-stopped
-    shm_size: "512m"
     ports:
       - "8888:8888"
     environment:
-      DATABASE_URL: "sqlite+aiosqlite:////app/data/3dp.db"
-      SECRET_KEY: "${SECRET_KEY:?SECRET_KEY must be set}"
-      TOKEN_TTL_SECONDS: "${TOKEN_TTL_SECONDS:-604800}"
+      DATABASE_URL: "sqlite:////data/db/app.db"
+      SECRET_KEY: "${SECRET_KEY}"
+      TOKEN_TTL_SECONDS: "${TOKEN_TTL_SECONDS:-3600}"
       ORCA_SLICER_BIN: "/usr/local/bin/orca-slicer"
-      ORCA_PROFILES_DIR: "/app/profiles"
+      ORCA_PROFILES_DIR: "/data/profiles"
     volumes:
-      - ajmd_3dp_data:/app/data
-      - ajmd_3dp_storage:/app/storage
-      - ajmd_3dp_profiles:/app/profiles
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8888/openapi.json"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
-
-volumes:
-  ajmd_3dp_data:
-  ajmd_3dp_storage:
-  ajmd_3dp_profiles:
+      - /mnt/nas1/ajmd/db:/data/db
+      - /mnt/nas1/ajmd/profiles:/data/profiles
