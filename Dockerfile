@@ -17,8 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=ghcr.io/astral-sh/uv:0.13.9 /uv /uvx /bin/
 
 # Install and extract OrcaSlicer Linux AppImage
-ARG ORCA_VERSION=2.2.0
-RUN curl -fsSL "https://github.com{ORCA_VERSION}/OrcaSlicer_Linux_V${ORCA_VERSION}.AppImage" -o /opt/orca-slicer.AppImage \
+RUN curl -fsSL "https://github.com" -o /opt/orca-slicer.AppImage \
     && chmod +x /opt/orca-slicer.AppImage \
     && cd /opt && /opt/orca-slicer.AppImage --appimage-extract \
     && rm /opt/orca-slicer.AppImage \
