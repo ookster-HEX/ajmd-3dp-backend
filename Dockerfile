@@ -70,4 +70,4 @@ RUN mkdir -p /data/db /data/profiles
 EXPOSE 8888
 
 # Run FastAPI via uvicorn on port 8888 (adjust "main:app" if needed)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8888"]
+CMD ["uv", "fastapi", "run", "--host", "0.0.0.0", "--port", "8888"]
