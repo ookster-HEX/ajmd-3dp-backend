@@ -1,7 +1,7 @@
-# Use Python 3.11 slim Debian bookworm base image
+# syntax=docker/dockerfile:1
 FROM python:3.11-slim-bookworm
 
-# Install system dependencies required by OrcaSlicer (EGL/GL/GTK/FUSE/curl) and uv
+# Install system dependencies required by OrcaSlicer (EGL/GL/GTK/xvfb) and curl
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
@@ -10,35 +10,43 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libglu1-mesa \
     libgtk-3-0 \
     libwebkit2gtk-4.0-37 \
-    libfuse2 \
     xvfb \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv for fast dependency management
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# Pin uv version for reproducible builds
+COPY --from=ghcr.io/astral-sh/uv:0.13.9 /uv /uvx /bin/
 
-# Install OrcaSlicer Linux AppImage/binary into /usr/local/bin/orca-slicer
-ARG ORCA_VERSION=v2.2.0
-RUN curl -L "https://github.com/SoftFever/OrcaSlicer/releases/download/${ORCA_VERSION}/OrcaSlicer_Linux_V2.2.0.AppImage" -o /opt/orca-slicer.AppImage \
+# Install and extract OrcaSlicer Linux AppImage
+ARG ORCA_VERSION=2.2.0
+RUN curl -fsSL "https://github.com{ORCA_VERSION}/OrcaSlicer_Linux_V${ORCA_VERSION}.AppImage" -o /opt/orca-slicer.AppImage \
     && chmod +x /opt/orca-slicer.AppImage \
     && cd /opt && /opt/orca-slicer.AppImage --appimage-extract \
     && rm /opt/orca-slicer.AppImage \
-    && printf '#!/bin/sh\nxvfb-run -a /opt/squashfs-root/AppRun "$@"\n' > /usr/local/bin/orca-slicer \
+    && printf '#!/bin/sh\nexec xvfb-run -a /opt/squashfs-root/AppRun "$@"\n' > /usr/local/bin/orca-slicer \
     && chmod +x /usr/local/bin/orca-slicer
 
 WORKDIR /app
 
-# Copy project configuration and install Python dependencies via uv
-COPY pyproject.toml ./
-RUN uv sync --no-dev
+# Put the uv virtual environment directly on PATH
+ENV PATH="/app/.venv/bin:$PATH" \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
 
-# Copy application source and admin helper script
-COPY main.py make_admin.py ./
+# Install Python dependencies first for optimal layer caching
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
 
-# Create persistent directories for SQLite DB, user uploads, samples, and slicer profiles
-RUN mkdir -p /app/data /app/storage/useruploads /app/storage/samples /app/profiles
+# Create non-root user and persistent directories
+RUN useradd --create-home --shell /bin/bash appuser \
+    && mkdir -p /app/data /app/storage/useruploads /app/storage/samples /app/profiles
+
+# Copy application source with proper ownership
+COPY --chown=appuser:appuser main.py make_admin.py ./
+RUN chown -R appuser:appuser /app
+
+USER appuser
 
 EXPOSE 8888
 
-# Run FastAPI via uvicorn inside the uv virtual environment
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8888", "--proxy-headers"]
+# Run uvicorn directly from the virtual environment
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8888", "--proxy-headers"]
