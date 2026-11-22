@@ -3,7 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: fastapi-orcaslicer:latest
     container_name: fastapi-orcaslicer
     restart: unless-stopped
     ports:
