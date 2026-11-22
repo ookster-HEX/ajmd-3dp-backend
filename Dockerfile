@@ -25,6 +25,7 @@ RUN curl -fsSL "https://github.com{ORCA_VERSION}/OrcaSlicer_Linux_V${ORCA_VERSIO
     && printf '#!/bin/sh\nexec xvfb-run -a /opt/squashfs-root/AppRun "$@"\n' > /usr/local/bin/orca-slicer \
     && chmod +x /usr/local/bin/orca-slicer
 
+
 WORKDIR /app
 
 # Put the uv virtual environment directly on PATH
